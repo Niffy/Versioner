@@ -1,53 +1,114 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- WARNING: Eclipse auto-generated file.
-              Any modifications will be overwritten.
-              To include a user specific buildfile here, simply create one in the same
-              directory with the processing instruction <?eclipse.ant.import?>
-              as the first entry and export the buildfile again. --><project basedir="." default="build" name="Versioner">
-    <property environment="env"/>
-    <property name="ECLIPSE_HOME" value="../../../../Android/Tools/eclipse-SDK-3.7.2-win32-x86_64/eclipse"/>
-    <property name="debuglevel" value="source,lines,vars"/>
-    <property name="target" value="1.7"/>
-    <property name="source" value="1.7"/>
-    <path id="Versioner.classpath">
-        <pathelement location="bin"/>
-        <pathelement location="libs/log4j-1.2.17.jar"/>
-        <pathelement location="libs/slf4j-api-1.7.5.jar"/>
-        <pathelement location="libs/slf4j-log4j12-1.7.5.jar"/>
-    </path>
-    <target name="init">
-        <mkdir dir="bin"/>
-        <copy includeemptydirs="false" todir="bin">
-            <fileset dir="src">
-                <exclude name="**/*.java"/>
-            </fileset>
-        </copy>
+<project basedir="." default="release" name="Versioner">
+	<property name="src.dir"     value="src"/>
+	<property name="build.dir"   value="bin"/>
+	<property name="classes.dir" value="${build.dir}/classes"/>
+	<property name="jar.dir"     value="${build.dir}/jar"/>
+	<property name="dist.dir"     value="${build.dir}/dist"/>
+	<property name="dist-lib.dir"     value="${dist.dir}/lib"/>
+	<property name="dist-src.dir"     value="dist"/>
+	<property name="main-class"  value="com.niffy.build.BuildTool" />
+	<property name="lib.dir"     value="libs"/>
+	
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="*.jar"/>
+		<pathelement path="${dist-src.dir}"/>
+	</path>
+	
+	<path id="classpath.dist">
+			<fileset dir="${dist-lib.dir}" includes="*.jar"/>
+			<pathelement path="${dist.dir}"/>
+		</path>
+
+	<target name="create-dist-folder" description="Create dist folder">
+		<mkdir dir="${dist.dir}"/>
+	</target>
+	
+	<target name="distribute-libs" depends="create-dist-folder" description="Create the dist and libs folder, copy over libs and properties file">
+		<mkdir dir="${dist-lib.dir}"/>
+		<copy todir="${dist.dir}">
+		    <fileset dir="${dist-src.dir}"/>
+		</copy>
+		<echo message="Copied required libs to dist folder ${dist.dir}" />
+		<copy todir="${dist-lib.dir}">
+			<fileset dir="${lib.dir}"/>
+		</copy>
+		<echo message="Copied required properties to dist folder ${dist.dir}" />
+	</target>
+	
+	<target name="compile" description="Compile the java program">
+		<mkdir dir="${classes.dir}"/>
+	    <javac srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false"  classpathref="classpath">
+		</javac>
+	</target>
+		
+	<target name="jar-create-without-dependencies" depends="compile, distribute-libs" >
+        <mkdir dir="${jar.dir}"/>
+        <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="${main-class}"/>
+            </manifest>
+        </jar>
+		<copy todir="${dist.dir}">
+			<fileset dir="${jar.dir}"/>
+		</copy>
+		<echo message="Copyied the jar to ${dist.dir}" />
     </target>
-    <target name="clean">
-        <delete dir="bin"/>
+	
+	<target name="jar-create-with-dependencies" depends="compile, create-dist-folder" >
+        <mkdir dir="${jar.dir}"/>
+        <jar destfile="${jar.dir}/${ant.project.name}-dependencies.jar" basedir="${classes.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="${main-class}"/>
+            </manifest>
+        	<fileset dir="${classes.dir}" includes="**/*.class" />
+	        <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" />
+        	<fileset dir="${dist-src.dir}" excludes="*.jar"/>
+        </jar>
+		<copy todir="${dist.dir}">
+			<fileset dir="${jar.dir}"/>
+		</copy>
+		<echo message="Copyied the jar to ${dist.dir}" />
     </target>
-    <target depends="clean" name="cleanall"/>
-    <target depends="build-subprojects,build-project" name="build"/>
-    <target name="build-subprojects"/>
-    <target depends="init" name="build-project">
-        <echo message="${ant.project.name}: ${ant.file}"/>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
-            <src path="src"/>
-            <classpath refid="Versioner.classpath"/>
-        </javac>
-    </target>
-    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
-        <copy todir="${ant.library.dir}">
-            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
-        </copy>
-        <unzip dest="${ant.library.dir}">
-            <patternset includes="jdtCompilerAdapter.jar"/>
-            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
-        </unzip>
-    </target>
-    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
-        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
-        <antcall target="build"/>
-    </target>
+	
+	<target name="clean" description="Cleans build directory">
+	    <delete dir="${build.dir}" failonerror="false"/>
+	</target>
+	<target name="release" depends="clean, release-with, release-without" description="Cleans and creates jar with and without dependencies"/>
+	<target name="release-with" depends="clean, jar-create-with-dependencies" description="Cleans and creates jar with  dependencies"/>
+	<target name="release-without" depends="clean, jar-create-without-dependencies" description="Cleans and creates jar without dependencies" />
+	<target name="run" depends="run-without" description="Runs jar without dependencies"/>
+	<target name="run-without" depends="jar-create-without-dependencies" description="Runs jar without dependencies">
+		<java fork="true" classname="${main-class}">
+			<classpath>
+			    <path refid="classpath.dist"/>
+			    <path location="${jar.dir}/${ant.project.name}.jar"/>
+			</classpath>
+		</java>
+	</target>
+	<target name="run-with" depends="jar-create-with-dependencies" description="Runs jar with dependencies" >
+		<java fork="true" classname="${main-class}" >
+			<classpath>
+			    <path location="${dist.dir}/${ant.project.name}-dependencies.jar"/>
+			</classpath>
+		</java>
+	</target>
+	
+	<target name="help">
+		<echo>Niffy Java versioner. Available targets:</echo>
+		<echo>   clean:				Clean build directory.</echo>
+		<echo>   release:			Cleans, creates jar with and without dependencies.</echo>
+		<echo>   release-with:		Cleans, creates jar with dependencies.</echo>
+		<echo>   release-without:	Cleans, creates jar without dependencies.</echo>
+		<echo>   run:				Runs jar without dependencies.</echo>
+		<echo>   run-with:			Runs jar with dependencies.</echo>
+		<echo>   run-without:		Runs jar without dependencies.</echo>
+		<echo></echo>
+		<echo>Best not to call these are they are part of a process</echo>
+		<echo>	 create-dist-folder: Creates Dist folder</echo>
+		<echo>   distribute-libs:	Copies files the to dist folder for jar without dependencies</echo>
+		<echo>   compile:			Compiles java classes</echo>
+		<echo>   jar-create-without-dependencies: calls..compile, distribute-libs, creates jar then copies to dist</echo>
+		<echo>   jar-create-with-dependencies: calls..compile, create-dist-folder, creates jar then copies to dist</echo>
+	</target>
 </project>
