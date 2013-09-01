@@ -22,11 +22,11 @@ public class BuildTool {
 	// Constructors
 	// ===========================================================
 	public BuildTool(){
-		
+		String version = this.getClass().getPackage().getImplementationVersion();
+		log.info("Created BuildTool. Using build: {}", version);
 	}
 
-	public static void main(String[] args) {
-		log.info("Started BuildTool");
+	public static void main(String[] args) {		
 		/*
 		//Check what classpaths we have got
 		ClassLoader cl = ClassLoader.getSystemClassLoader();
@@ -79,7 +79,7 @@ public class BuildTool {
 	 * @param pIncCode {@link String} of a {@link Boolean} value indicate if the versionCode should increment
 	 */
 	public void versionControl(final String pPropsFile, final String pType, final String pIncCode){
-		log.info("Doing version control!");
+		log.info("Populating version file");
 		log.info("properties file: {} type: {} IncCode: {}", pPropsFile, pType, pIncCode);
 		Properties prop = new Properties();
 		try{

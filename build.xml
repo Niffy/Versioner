@@ -10,15 +10,19 @@
 	<property name="main-class"  value="com.niffy.build.BuildTool" />
 	<property name="lib.dir"     value="libs"/>
 	
+	<tstamp>
+	    <format property="now" pattern="dd.MM.yyyy HH:mm"/>
+	</tstamp>
+	
 	<path id="classpath">
 		<fileset dir="${lib.dir}" includes="*.jar"/>
 		<pathelement path="${dist-src.dir}"/>
 	</path>
 	
 	<path id="classpath.dist">
-			<fileset dir="${dist-lib.dir}" includes="*.jar"/>
-			<pathelement path="${dist.dir}"/>
-		</path>
+		<fileset dir="${dist-lib.dir}" includes="*.jar"/>
+		<pathelement path="${dist.dir}"/>
+	</path>
 
 	<target name="create-dist-folder" description="Create dist folder">
 		<mkdir dir="${dist.dir}"/>
@@ -60,6 +64,8 @@
         <jar destfile="${jar.dir}/${ant.project.name}-dependencies.jar" basedir="${classes.dir}">
             <manifest>
                 <attribute name="Main-Class" value="${main-class}"/>
+            	<attribute name="Implementation-Title" value="${application.title}"/>
+            	<attribute name="Implementation-Version" value="${now}"/>
             </manifest>
         	<fileset dir="${classes.dir}" includes="**/*.class" />
 	        <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" />
