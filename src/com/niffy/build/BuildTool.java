@@ -1,7 +1,8 @@
 package com.niffy.build;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -25,19 +26,31 @@ public class BuildTool {
 	}
 
 	public static void main(String[] args) {
-		BuildTool tool = new BuildTool();
 		log.info("Started BuildTool");
-		if(args.length != 0){
-			if(args[0] == "version"){
-				tool.versionControl(args[1], args[2], args[3]);
-			}
-		}
 		/*
+		//Check what classpaths we have got
 		ClassLoader cl = ClassLoader.getSystemClassLoader();
         URL[] urls = ((URLClassLoader)cl).getURLs();
         for(URL url: urls){
         	System.out.println(url.getFile());
         }
+        */
+		
+		/*
+		//Loop arguments
+		final int count = args.length;
+		for (int i = 0; i < count; i++) {
+			log.info("Args: {} {}", i, args[i]);
+		}
+		*/
+		BuildTool tool = new BuildTool();
+		if(args.length != 0){
+			if(args[0].equalsIgnoreCase("version")){
+				tool.versionControl(args[1], args[2], args[3]);
+			}
+		}
+		
+		/*
 		Properties prop = new Properties();
 		try{
 			InputStream stream = BuildTool.class.getClassLoader().getResourceAsStream("log4j.properties");
@@ -61,15 +74,18 @@ public class BuildTool {
 	// ===========================================================
 	/**
 	 * Increment and set values in the version file
-	 * @param pPropsFile {@link String} The properties file to load
-	 * @param pType {@link String} of release type, this must match the ant build tool
+	 * @param pPropsFile {@link String} The properties file to load. This has to be the absolute path
+	 * @param pType {@link String} of release type, this must match the ant build tool, ie release, debug or beta
 	 * @param pIncCode {@link String} of a {@link Boolean} value indicate if the versionCode should increment
 	 */
 	public void versionControl(final String pPropsFile, final String pType, final String pIncCode){
+		log.info("Doing version control!");
+		log.info("properties file: {} type: {} IncCode: {}", pPropsFile, pType, pIncCode);
 		Properties prop = new Properties();
 		try{
-			InputStream stream = BuildTool.class.getClassLoader().getResourceAsStream(pPropsFile);
-			prop.load(stream);
+			FileInputStream in = new FileInputStream(pPropsFile);
+			prop.load(in);
+			in.close();
 			
 			int version_build = 00;
 			int version_type = 99;
@@ -90,6 +106,10 @@ public class BuildTool {
 			prop.setProperty("Version.Build", Integer.toString(version_build));
 			prop.setProperty("Version.Code", Integer.toString(version_code));
 			prop.setProperty("Version.Type", Integer.toString(version_type));
+			
+			FileOutputStream out = new FileOutputStream(pPropsFile);
+			prop.store(out, null);
+			out.close();
 			log.info("Wrote new attributes to file");
 			
 		} catch (IOException ex){
