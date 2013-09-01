@@ -15,4 +15,5 @@ libs/android-support*.*
 libs/android-logging-log*.*
 libs/log4j*.*
 libs/slf4j*.*
+libs/commons-cli-1.2*.*
 log.log
